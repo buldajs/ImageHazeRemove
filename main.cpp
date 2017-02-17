@@ -6,10 +6,10 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     HazeRemoveHandler* hazeHandler = new HazeRemoveHandler();
-    Mat testImg = imread("../test2.jpg");
+    Mat testImg = imread("../test.jpg");
     hazeHandler->ReadOriImage(testImg);
     hazeHandler->DarkChannelPrior();
-    hazeHandler->ShowImage(0);
-    hazeHandler->ShowImage(1);
+    hazeHandler->EstimateAtmoLight();
+    hazeHandler->EstimateTransmission();
     return 0;
 }
