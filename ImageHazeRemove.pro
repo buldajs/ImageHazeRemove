@@ -4,7 +4,8 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += main.cpp \
-    hazeremovehandler.cpp
+    hazeremovehandler.cpp \
+    guidedfilter.cpp
 
 INCLUDEPATH +=  \
     /usr/local/include/opencv     \
@@ -15,4 +16,5 @@ LIBS += \
     -lopencv_core -lopencv_highgui -lopencv_imgproc
 
 HEADERS += \
-    hazeremovehandler.h
+    hazeremovehandler.h \
+    guidedfilter.h

@@ -5,7 +5,11 @@ HazeRemoveHandler::HazeRemoveHandler()
     kernel_size_ = 15;
     bright_percent_ = 0.1;
     A_[0] = A_[1] = A_[2] = 0;
+    A_average =0;
     w_ = 0.95;
+    r_ = 120;
+    eps_ = 0.001*0.001;
+    t0_ = 0.1;
 }
 
 
@@ -37,10 +41,18 @@ void HazeRemoveHandler::ShowImage(int type)
     case 1:
         imshow("Darkchannel Image",dark_channel_image_);
         break;
+    case 2:
+        imshow("Transmission Map",transmission_image_);
+        break;
+    case 3:
+        imshow("Smoothed Transmission Map",transmission_smoothed_image_);
+        break;
+    case 4:
+        imshow("Haze Free Image",haze_free_image_);
+        break;
     default:
         break;
     }
-        cvWaitKey(0);
 }
 
 // This Method is to get the dark channel of the original image
@@ -86,7 +98,9 @@ int HazeRemoveHandler::DarkChannelPrior()
 
 int HazeRemoveHandler::EstimateTransmission()
 {
-    float A_average = (A_[0]+A_[1]+A_[2])/3;
+    A_average = (A_[0]+A_[1]+A_[2])/3;
+    if(A_average>0.86)
+        A_average = 0.86;
     if( (ori_image_.cols==0) || (ori_image_.rows==0) || (A_average ==0))
     {
         return -1;
@@ -100,12 +114,13 @@ int HazeRemoveHandler::EstimateTransmission()
         for(int j = 0; j < cols; j++)
         {
             dark_tmp.at<float>(i,j) = min(
-                        min(ori_image_.at<Vec3f>(i,j)[0]/A_average,ori_image_.at<Vec3f>(i,j)[1]/A_average),
-                        min(ori_image_.at<Vec3f>(i,j)[0]/A_average,ori_image_.at<Vec3f>(i,j)[2]/A_average)
+//                        min(ori_image_.at<Vec3f>(i,j)[0]/A_average,ori_image_.at<Vec3f>(i,j)[1]/A_average),
+//                        min(ori_image_.at<Vec3f>(i,j)[0]/A_average,ori_image_.at<Vec3f>(i,j)[2]/A_average)
+                        min(ori_image_.at<Vec3f>(i,j)[0],ori_image_.at<Vec3f>(i,j)[1]),
+                        min(ori_image_.at<Vec3f>(i,j)[0],ori_image_.at<Vec3f>(i,j)[2])
                         );
         }
     Mat dark_hazeimage;
-
     // Minfilter implemented by erode function
     erode(dark_tmp,dark_hazeimage,Mat::ones(kernel_size_,kernel_size_,CV_32FC1));
 
@@ -159,5 +174,49 @@ int HazeRemoveHandler::EstimateAtmoLight()
     A_[0] /= bripix_num;
     A_[1] /= bripix_num;
     A_[2] /= bripix_num;
+    return 0;
+}
+
+// This Method uses guided image filter to smooth the transimission map(keep edge and remove noise)
+// Output :
+//          -1: means it has not compute transimission map, should do that before.
+//          0: means smooth succeed.
+int HazeRemoveHandler::SmoothTransmissionMap()
+{
+
+    if((transmission_image_.cols ==0) || (transmission_image_.rows==0))
+    {
+        return -1;
+    }
+
+    transmission_smoothed_image_ = guidedFilter(ori_image_,transmission_image_,r_,eps_);
+
+    return 0;
+}
+
+int HazeRemoveHandler::HazeFree()
+{
+    if((transmission_smoothed_image_.cols ==0) || (transmission_smoothed_image_.rows==0))
+    {
+        return -1;
+    }
+
+    haze_free_image_ = Mat(ori_image_.rows,ori_image_.cols,CV_32FC3);
+
+    int rows = haze_free_image_.rows;
+    int cols = haze_free_image_.cols;
+
+    for(int i = 0; i < rows; i++)
+        for(int j = 0; j < cols; j++)
+        {
+            float t_max;
+            if(transmission_smoothed_image_.at<float>(i,j) > t0_)
+                t_max = transmission_smoothed_image_.at<float>(i,j);
+            else
+                t_max = t0_;
+            haze_free_image_.at<Vec3f>(i,j)[0] = (ori_image_.at<Vec3f>(i,j)[0]-A_average)/t_max + A_average;
+            haze_free_image_.at<Vec3f>(i,j)[1] = (ori_image_.at<Vec3f>(i,j)[1]-A_average)/t_max + A_average;
+            haze_free_image_.at<Vec3f>(i,j)[2] = (ori_image_.at<Vec3f>(i,j)[2]-A_average)/t_max + A_average;
+        }
     return 0;
 }

@@ -46,9 +46,11 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = ../main.cpp \
-		../hazeremovehandler.cpp 
+		../hazeremovehandler.cpp \
+		../guidedfilter.cpp 
 OBJECTS       = main.o \
-		hazeremovehandler.o
+		hazeremovehandler.o \
+		guidedfilter.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/shell-unix.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/unix.conf \
@@ -274,11 +276,18 @@ compiler_clean:
 
 ####### Compile
 
-main.o: ../main.cpp ../hazeremovehandler.h
+main.o: ../main.cpp ../hazeremovehandler.h \
+		/usr/local/include/opencv2/opencv.hpp \
+		../guidedfilter.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../main.cpp
 
-hazeremovehandler.o: ../hazeremovehandler.cpp ../hazeremovehandler.h
+hazeremovehandler.o: ../hazeremovehandler.cpp ../hazeremovehandler.h \
+		/usr/local/include/opencv2/opencv.hpp \
+		../guidedfilter.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o hazeremovehandler.o ../hazeremovehandler.cpp
+
+guidedfilter.o: ../guidedfilter.cpp ../guidedfilter.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o guidedfilter.o ../guidedfilter.cpp
 
 ####### Install
 
